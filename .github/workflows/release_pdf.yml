@@ -40,8 +40,11 @@ jobs:
           # generating beautiful and modern PDFs)
           npm install -g md-to-pdf
           
+          # Create a config file to fix the "No usable sandbox" error in GitHub Actions
+          echo '{"launch_options": {"args": ["--no-sandbox", "--disable-setuid-sandbox"]}}' > md-to-pdf-config.json
+          
           # Render the PDF (outputs computer-science-rus.pdf)
-          md-to-pdf computer-science-rus.md
+          md-to-pdf --config-file md-to-pdf-config.json computer-science-rus.md
 
       - name: Upload PDF to Release
         uses: softprops/action-gh-release@v2
