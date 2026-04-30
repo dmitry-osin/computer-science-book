@@ -1,0 +1,50 @@
+name: Build and Upload PDF Book
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build_and_upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to upload assets to the release
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Concatenate Markdown Files
+        run: |
+          # Create an empty file for the final book
+          > computer-science-rus.md
+          
+          # Find all files starting with a digit (0_, 01_, 02_...),
+          # to avoid accidentally including README.md or other documents.
+          # sort -V ensures natural version sorting (1, 2, ..., 10, 11).
+          for file in $(ls [0-9]*.md | sort -V); do
+            echo "Adding $file..."
+            cat "$file" >> computer-science-rus.md
+            # Add empty lines and an HTML tag for a page break between chapters in the PDF
+            echo -e "\n\n<div style=\"page-break-after: always;\"></div>\n\n" >> computer-science-rus.md
+          done
+
+      - name: Convert Markdown to PDF
+        run: |
+          # Install the md-to-pdf utility (uses Chromium under the hood, 
+          # generating beautiful and modern PDFs)
+          npm install -g md-to-pdf
+          
+          # Render the PDF (outputs computer-science-rus.pdf)
+          md-to-pdf computer-science-rus.md
+
+      - name: Upload PDF to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # This action automatically uses the GitHub token to attach the file to the current release
+          files: computer-science-rus.pdf
