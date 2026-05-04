@@ -2,13 +2,13 @@ name: Build and Upload PDF Book
 
 on:
   release:
-    types: [created]
+    types: created
 
 jobs:
   build_and_upload:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Required to upload assets to the release
+      contents: write  # Required to upload assets to the release
 
     steps:
       - name: Checkout Repository
@@ -17,37 +17,34 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
       - name: Concatenate Markdown Files
         run: |
           # Create an empty file for the final book
-          > computer-science-rus.md
+          > computer-science-book.md
           
-          # Find all files starting with a digit (0_, 01_, 02_...),
-          # to avoid accidentally including README.md or other documents.
-          # sort -V ensures natural version sorting (1, 2, ..., 10, 11).
+          # Find all chapter files (00_toc.md, 01_chapter.md, 02_chapter.md...),
+          # sort -V ensures natural version sorting (0, 1, 2, ..., 10, 11).
           for file in $(ls [0-9]*.md | sort -V); do
             echo "Adding $file..."
-            cat "$file" >> computer-science-rus.md
+            cat "$file" >> computer-science-book.md
             # Add empty lines and an HTML tag for a page break between chapters in the PDF
-            echo -e "\n\n<div style=\"page-break-after: always;\"></div>\n\n" >> computer-science-rus.md
+            echo -e "\n\n<div style=\"page-break-after: always;\"></div>\n\n" >> computer-science-book.md
           done
 
       - name: Convert Markdown to PDF
         run: |
-          # Install the md-to-pdf utility (uses Chromium under the hood, 
+          # Install the md-to-pdf utility (uses Chromium under the hood,
           # generating beautiful and modern PDFs)
           npm install -g md-to-pdf
           
-          # Create a config file to fix the "No usable sandbox" error in GitHub Actions
-          echo '{"launch_options": {"args": ["--no-sandbox", "--disable-setuid-sandbox"]}}' > md-to-pdf-config.json
-          
-          # Render the PDF (outputs computer-science-rus.pdf)
-          md-to-pdf --config-file md-to-pdf-config.json computer-science-rus.md
+          # Render the PDF using the repository config with custom styles
+          # (config already contains --no-sandbox for GitHub Actions)
+          md-to-pdf --config-file md-to-pdf-config.json computer-science-book.md
 
       - name: Upload PDF to Release
         uses: softprops/action-gh-release@v2
         with:
           # This action automatically uses the GitHub token to attach the file to the current release
-          files: computer-science-rus.pdf
+          files: computer-science-book.pdf
